@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>House Price Prediction</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      color: #333;
+      background-image: url('https://images.unsplash.com/photo-1571171637578-41bc2dd41cd2');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+    }
+
+    h1, h2 {
+      color: #fff;
+      text-align: center;
+      text-shadow: 2px 2px 5px rgba(0,0,0,0.7);
+    }
+
+    .container {
+      background-color: rgba(255,255,255,0.9);
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      padding: 30px;
+      width: 100%;
+      max-width: 600px;
+      margin: 20px auto;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+    }
+
+    label {
+      font-weight: bold;
+      margin: 10px 0 5px;
+      color: #2c3e50;
+    }
+
+    input, select {
+      padding: 12px;
+      font-size: 16px;
+      border: 1px solid #00B98E;
+      border-radius: 4px;
+      margin-bottom: 15px;
+      width: 100%;
+      background-color: #f9f9f9;
+      box-sizing: border-box;
+    }
+
+    input:focus, select:focus {
+      border-color: #00B98E;
+      outline: none;
+    }
+
+    button {
+      background-color: #00B98E;
+      color: white;
+      padding: 15px;
+      font-size: 18px;
+      font-weight: bold;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    button:hover {
+      background-color: #009e7d;
+    }
+
+    #result {
+      margin-top: 20px;
+      font-size: 22px;
+      font-weight: bold;
+      text-align: center;
+      color: #00B98E;
+    }
+
+    .note {
+      text-align: center;
+      font-size: 14px;
+      color: #333;
+      margin-top: 8px;
+    }
+
+    .error {
+      color: #e74c3c;
+      font-size: 16px;
+      text-align: center;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>Predict Your Home Price</h1>
+    <h2>Enter Property Details</h2>
+
+    <form id="predictForm">
+      <label for="area">Area (m²):</label>
+      <input id="area" type="number" required>
+
+      <label for="bedrooms">Bedrooms:</label>
+      <input id="bedrooms" type="number" required>
+
+      <label for="bathrooms">Bathrooms:</label>
+      <input id="bathrooms" type="number" required>
+
+      <label for="salons">Salons:</label>
+      <input id="salons" type="number" required>
+
+      <label for="kitchens">Kitchens:</label>
+      <input id="kitchens" type="number" required>
+
+      <label for="floor">Floor:</label>
+      <input id="floor" type="number" required>
+
+      <label for="yearBuilt">Year Built:</label>
+      <input id="yearBuilt" type="number" required>
+
+      <label for="proximity">Proximity to Amenities (m):</label>
+      <input id="proximity" type="number" required>
+
+      <label for="location">Location:</label>
+      <select id="location" required>
+        <option>Beirut</option>
+        <option>Tripoli</option>
+        <option>Zahle</option>
+        <option>Jounieh</option>
+        <option>Sidon</option>
+        <option>Tyre</option>
+        <option>Byblos</option>
+        <option>Baalbek</option>
+        <option>Aley</option>
+        <option>Batroun</option>
+      </select>
+
+      <label for="type">Type:</label>
+      <select id="type" required>
+        <option>Apartment</option>
+        <option>Villa</option>
+        <option>Townhouse</option>
+      </select>
+
+      <label for="condition">Condition:</label>
+      <select id="condition" required>
+        <option>Excellent</option>
+        <option>Good</option>
+        <option>Fair</option>
+        <option>Needs Renovation</option>
+      </select>
+
+      <button type="submit">Predict Price</button>
+    </form>
+
+    <h3 id="result"></h3>
+    <p class="note" id="note"></p>
+    <div id="errorMessage" class="error"></div>
+  </div>
+
+  <script>
+    document.getElementById("predictForm").addEventListener("submit", async function(e) {
+      e.preventDefault();
+
+      const area = Number(document.getElementById("area").value);
+      const bedrooms = Number(document.getElementById("bedrooms").value);
+      const bathrooms = Number(document.getElementById("bathrooms").value);
+      const salons = Number(document.getElementById("salons").value);
+      const kitchens = Number(document.getElementById("kitchens").value);
+      const floor = Number(document.getElementById("floor").value);
+      const yearBuilt = Number(document.getElementById("yearBuilt").value);
+      const proximityToAmenities = Number(document.getElementById("proximity").value);
+
+      let errorMessage = "";
+
+      if (area <= 30) errorMessage += "Area must be greater than 30.\n";
+      if (bedrooms <= 0) errorMessage += "Bedrooms must be greater than 0.\n";
+      if (bathrooms <= 0) errorMessage += "Bathrooms must be greater than 0.\n";
+      if (salons <= 0) errorMessage += "Salons must be greater than 0.\n";
+      if (kitchens <= 0) errorMessage += "Kitchens must be greater than 0.\n";
+      if (floor <= 0) errorMessage += "Floor must be greater than 0.\n";
+      if (yearBuilt <= 1950) errorMessage += "Year Built must be greater than 1950.\n";
+
+      if (errorMessage) {
+        alert(errorMessage);
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/predict-price", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            location: document.getElementById("location").value,
+            type: document.getElementById("type").value,
+            bedrooms,
+            bathrooms,
+            salons,
+            kitchens,
+            area,
+            floor,
+            yearBuilt,
+            condition: document.getElementById("condition").value,
+            proximityToAmenities
+          })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || "Prediction failed");
+        }
+
+        document.getElementById("result").innerText =
+          `📌 AI Suggested Price: $${data.predictedPrice}`;
+
+        document.getElementById("note").innerText =
+          "This is only an estimated price. The seller can choose any price.";
+
+      } catch (error) {
+        document.getElementById("result").innerText = "";
+        document.getElementById("note").innerText = "";
+        document.getElementById("errorMessage").innerText = error.message;
+      }
+    });
+  </script>
+</body>
+</html>

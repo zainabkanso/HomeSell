@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+  <title>Messages | HomeSell</title>
+
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  />
+
+  <link rel="stylesheet" href="css/styles.css"/>
+
+  <style>
+    body {
+      background: #f6f8f7;
+    }
+
+    .page-header {
+      margin-bottom: 30px;
+    }
+
+    .chat-card {
+      background: white;
+      border-radius: 20px;
+      padding: 18px;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      cursor: pointer;
+      transition: 0.2s;
+      box-shadow: 0 8px 25px rgba(0,0,0,.07);
+    }
+
+    .chat-card:hover {
+      transform: translateY(-2px);
+    }
+
+    .chat-card.unread {
+      border-left: 5px solid #00b98e;
+    }
+
+    .chat-image {
+      width: 85px;
+      height: 85px;
+      border-radius: 18px;
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+
+    .chat-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .chat-title {
+      color: #00b98e;
+      font-weight: 700;
+      margin-bottom: 3px;
+    }
+
+    .chat-location {
+      color: #888;
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+
+    .chat-last-message {
+      color: #444;
+      font-size: 14px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .chat-meta {
+      text-align: right;
+      min-width: 80px;
+    }
+
+    .chat-time {
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 8px;
+    }
+
+    .badge-unread {
+      background: #00b98e;
+      color: white;
+      border-radius: 50px;
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .read-text {
+      color: #999;
+      font-size: 12px;
+    }
+
+    .empty-box {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      text-align: center;
+      color: #888;
+      box-shadow: 0 8px 25px rgba(0,0,0,.07);
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="navPlaceholder"></div>
+  <div class="container mt-3">
+    <a href="homes.html" class="btn btn-outline-secondary btn-sm">
+      Back
+    </a>
+    </div>
+  </nav>
+
+  <main class="container py-5">
+
+    <div class="page-header">
+      <h1 class="fw-bold">Messages</h1>
+      <p class="text-muted">
+        Chat with buyers and home owners.
+      </p>
+    </div>
+
+    <div id="chatsList"></div>
+
+  </main>
+
+  <script src="js/common-nav.js"></script>
+  <script src="js/app.js"></script>
+
+  <script>
+    const chatsList = document.getElementById("chatsList");
+    const currentUserId = getTokenPayload()?.userId;
+
+    const formatDate = (dateString) => {
+      if (!dateString) return "";
+
+      const date = new Date(dateString);
+
+      return date.toLocaleString([], {
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    };
+
+    const openChat = (chatId) => {
+      window.location.href = `chat.html?id=${chatId}`;
+    };
+
+    const loadMyChats = async () => {
+      try {
+        const response = await fetch(
+          `${apiBase}/chat/my-chats`,
+          {
+            headers: {
+              ...getAuthHeaders(),
+            },
+          }
+        );
+
+        const chats = await response.json();
+
+        if (!response.ok) {
+          chatsList.innerHTML = `
+            <div class="alert alert-danger">
+              ${chats.message || "Could not load chats"}
+            </div>
+          `;
+          return;
+        }
+
+        if (!chats.length) {
+          chatsList.innerHTML = `
+            <div class="empty-box">
+              <h5>No conversations yet</h5>
+              <p class="mb-0">
+                Start chatting with home owners.
+              </p>
+            </div>
+          `;
+          return;
+        }
+
+        chatsList.innerHTML = chats.map(chat => {
+
+          const image =
+            chat.home?.images?.[0] ||
+            "https://via.placeholder.com/100x100?text=Home";
+
+          const lastMessageText = (() => {
+            if (!chat.lastMessage) return "No messages yet";
+            if (chat.lastMessage.type === "text") return chat.lastMessage.text || "No messages yet";
+            if (chat.lastMessage.type === "image") return "Image";
+            if (chat.lastMessage.type === "video") return "Video";
+            if (chat.lastMessage.type === "voice") return "Voice note";
+            if (chat.lastMessage.type === "location") return "Location shared";
+            return "Message";
+          })();
+
+          const unread = chat.unreadCount || 0;
+
+          const isLastMessageMine =
+            chat.lastMessage?.sender?._id === currentUserId ||
+            chat.lastMessage?.sender === currentUserId;
+
+          const isReadByOther =
+            isLastMessageMine &&
+            chat.lastMessage?.readBy?.some((reader) => {
+              const readerId = String(reader._id || reader);
+              const senderId = String(chat.lastMessage?.sender?._id || chat.lastMessage?.sender);
+              return readerId !== senderId;
+            });
+
+          const statusLabel = unread > 0
+            ? `<span class="badge-unread">${unread}</span>`
+            : isLastMessageMine
+              ? isReadByOther
+                ? `<span class="read-text">Seen</span>`
+                : `<span class="read-text">Sent</span>`
+              : `<span class="read-text">Read</span>`;
+
+          return `
+            <div
+              class="chat-card ${unread > 0 ? "unread" : ""}"
+              onclick="openChat('${chat._id}')"
+            >
+
+              <img
+                src="${image}"
+                class="chat-image"
+                alt="Home"
+              >
+
+              <div class="chat-content">
+
+                <div class="chat-title">
+                  ${chat.home?.title || "Home Chat"}
+                </div>
+
+                <div class="chat-location">
+                  ${chat.home?.location || ""}
+                </div>
+
+                <div class="chat-last-message">
+                  ${lastMessageText}
+                </div>
+
+              </div>
+
+              <div class="chat-meta">
+
+                <div class="chat-time">
+                  ${formatDate(chat.updatedAt)}
+                </div>
+
+                ${statusLabel}
+
+              </div>
+
+            </div>
+          `;
+        }).join("");
+
+      } catch (error) {
+        console.error(error);
+
+        chatsList.innerHTML = `
+          <div class="alert alert-danger">
+            Error loading chats.
+          </div>
+        `;
+      }
+    };
+
+    loadMyChats();
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>House Price Prediction</title>
+    <link rel="stylesheet" href="css/predict.css" />
+    <style>
+      .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: #00b98e;
+        font-weight: 600;
+        text-decoration: none;
+        margin-bottom: 16px;
+      }
+
+      .back-link:hover {
+        text-decoration: underline;
+      }
+
+      .prediction-modal {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        z-index: 1000;
+      }
+
+      .prediction-modal[hidden] {
+        display: none;
+      }
+
+      .prediction-modal__content {
+        background: #fff;
+        border-radius: 16px;
+        padding: 28px;
+        max-width: 480px;
+        width: 100%;
+        text-align: center;
+        box-shadow: 0 20px 45px rgba(0, 0, 0, 0.25);
+      }
+
+      .prediction-modal__content h2 {
+        color: #00b98e;
+        margin-bottom: 12px;
+      }
+
+      .prediction-modal__price {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #111827;
+        margin: 16px 0;
+      }
+
+      .prediction-modal__text {
+        color: #6b7280;
+        margin-bottom: 20px;
+      }
+
+      .prediction-modal__button {
+        background: #00b98e;
+        color: #fff;
+        border: none;
+        border-radius: 999px;
+        padding: 10px 22px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .prediction-modal__button:hover {
+        background: #009b7e;
+      }
+    </style>
+    <!-- <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      color: #333;
+      background-image: url('https://images.unsplash.com/photo-1571171637578-41bc2dd41cd2');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+    }
+
+    h1, h2 {
+      color: #fff;
+      text-align: center;
+      text-shadow: 2px 2px 5px rgba(0,0,0,0.7);
+    }
+
+    .container {
+      background-color: rgba(255,255,255,0.9);
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      padding: 30px;
+      width: 100%;
+      max-width: 600px;
+      margin: 20px auto;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+    }
+
+    label {
+      font-weight: bold;
+      margin: 10px 0 5px;
+      color: #2c3e50;
+    }
+
+    input, select {
+      padding: 12px;
+      font-size: 16px;
+      border: 1px solid #00B98E;
+      border-radius: 4px;
+      margin-bottom: 15px;
+      width: 100%;
+      background-color: #f9f9f9;
+      box-sizing: border-box;
+    }
+
+    input:focus, select:focus {
+      border-color: #00B98E;
+      outline: none;
+    }
+
+    button {
+      background-color: #00B98E;
+      color: white;
+      padding: 15px;
+      font-size: 18px;
+      font-weight: bold;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    button:hover {
+      background-color: #009e7d;
+    }
+
+    #result {
+      margin-top: 20px;
+      font-size: 22px;
+      font-weight: bold;
+      text-align: center;
+      color: #00B98E;
+    }
+
+    .note {
+      text-align: center;
+      font-size: 14px;
+      color: #333;
+      margin-top: 8px;
+    }
+
+    .error {
+      color: #e74c3c;
+      font-size: 16px;
+      text-align: center;
+    }
+  </style> -->
+  </head>
+
+  <body>
+    <div class="container">
+      <a href="#" class="back-link" id="backLink">← Back</a>
+      <h1>Predict Your Home Price</h1>
+      <h2>Enter Property Details</h2>
+
+      <form id="predictForm">
+        <div class="form-group">
+          <label for="area">Area (m²)</label>
+          <input id="area" type="number" required />
+        </div>
+
+        <div class="form-group">
+          <label for="bedrooms">Bedrooms</label>
+          <input id="bedrooms" type="number" required />
+        </div>
+
+        <div class="form-group">
+          <label for="bathrooms">Bathrooms</label>
+          <input id="bathrooms" type="number" required />
+        </div>
+
+        <div class="form-group">
+          <label for="salons">Salons</label>
+          <input id="salons" type="number" required />
+        </div>
+
+        <div class="form-group">
+          <label for="kitchens">Kitchens</label>
+          <input id="kitchens" type="number" required />
+        </div>
+
+        <div class="form-group">
+          <label for="floor">Floor</label>
+          <input id="floor" type="number" required />
+        </div>
+
+        <div class="form-group">
+          <label for="yearBuilt">Year Built</label>
+          <input id="yearBuilt" type="number" required />
+        </div>
+
+        <div class="form-group">
+          <label for="proximity">Proximity to Amenities (m)</label>
+          <input id="proximity" type="number" required />
+        </div>
+
+        <div class="form-group">
+          <label for="location">Location</label>
+          <select id="location" required>
+            <option>Beirut</option>
+            <option>Tripoli</option>
+            <option>Zahle</option>
+            <option>Jounieh</option>
+            <option>Sidon</option>
+            <option>Tyre</option>
+            <option>Byblos</option>
+            <option>Baalbek</option>
+            <option>Aley</option>
+            <option>Batroun</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="type">Type</label>
+          <select id="type" required>
+            <option>Apartment</option>
+            <option>Villa</option>
+            <option>Townhouse</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="condition">Condition</label>
+          <select id="condition" required>
+            <option>Excellent</option>
+            <option>Good</option>
+            <option>Fair</option>
+            <option>Needs Renovation</option>
+          </select>
+        </div>
+
+        <button type="submit">Predict Price</button>
+      </form>
+
+      <div id="errorMessage" class="error"></div>
+    </div>
+
+    <div
+      id="predictionModal"
+      class="prediction-modal"
+      hidden
+      aria-hidden="true"
+    >
+      <div
+        class="prediction-modal__content"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="predictionModalTitle"
+      >
+        <h2 id="predictionModalTitle">AI Suggested Price</h2>
+        <div id="modalPrice" class="prediction-modal__price"></div>
+        <p class="prediction-modal__text">
+          This is only an estimated market price. Sellers can choose any listing
+          price.
+        </p>
+        <button
+          id="closePredictionModal"
+          class="prediction-modal__button"
+          type="button"
+        >
+          Thank you
+        </button>
+      </div>
+    </div>
+
+    <script>
+      const backLink = document.getElementById("backLink");
+      const predictionModal = document.getElementById("predictionModal");
+      const closePredictionModalButton = document.getElementById(
+        "closePredictionModal",
+      );
+      const modalPrice = document.getElementById("modalPrice");
+      const errorMessage = document.getElementById("errorMessage");
+      const predictForm = document.getElementById("predictForm");
+
+      const closePredictionModal = () => {
+        predictionModal.hidden = true;
+        predictionModal.setAttribute("aria-hidden", "true");
+        predictForm.scrollIntoView({ behavior: "smooth", block: "start" });
+        document.getElementById("area").focus();
+      };
+
+      if (closePredictionModalButton) {
+        closePredictionModalButton.addEventListener(
+          "click",
+          closePredictionModal,
+        );
+      }
+
+      if (predictionModal) {
+        predictionModal.addEventListener("click", (event) => {
+          if (event.target === predictionModal) {
+            closePredictionModal();
+          }
+        });
+      }
+
+      if (backLink) {
+        backLink.addEventListener("click", function (event) {
+          event.preventDefault();
+          if (window.history.length > 1) {
+            window.history.back();
+          } else {
+            window.location.href = "add-home.html";
+          }
+        });
+      }
+
+      document
+        .getElementById("predictForm")
+        .addEventListener("submit", async function (e) {
+          e.preventDefault();
+
+          const area = Number(document.getElementById("area").value);
+          const bedrooms = Number(document.getElementById("bedrooms").value);
+          const bathrooms = Number(document.getElementById("bathrooms").value);
+          const salons = Number(document.getElementById("salons").value);
+          const kitchens = Number(document.getElementById("kitchens").value);
+          const floor = Number(document.getElementById("floor").value);
+          const yearBuilt = Number(document.getElementById("yearBuilt").value);
+          const proximityToAmenities = Number(
+            document.getElementById("proximity").value,
+          );
+
+          let validationError = "";
+
+          if (area <= 30) validationError += "Area must be greater than 30.\n";
+          if (bedrooms <= 0)
+            validationError += "Bedrooms must be greater than 0.\n";
+          if (bathrooms <= 0)
+            validationError += "Bathrooms must be greater than 0.\n";
+          if (salons <= 0)
+            validationError += "Salons must be greater than 0.\n";
+          if (kitchens <= 0)
+            validationError += "Kitchens must be greater than 0.\n";
+          if (floor <= 0) validationError += "Floor must be greater than 0.\n";
+          if (yearBuilt <= 1950)
+            validationError += "Year Built must be greater than 1950.\n";
+
+          if (validationError) {
+            alert(validationError);
+            return;
+          }
+
+          try {
+            const response = await fetch("/api/predict-price", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                location: document.getElementById("location").value,
+                type: document.getElementById("type").value,
+                bedrooms,
+                bathrooms,
+                salons,
+                kitchens,
+                area,
+                floor,
+                yearBuilt,
+                condition: document.getElementById("condition").value,
+                proximityToAmenities,
+              }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+              throw new Error(data.message || "Prediction failed");
+            }
+
+            errorMessage.innerText = "";
+            modalPrice.innerHTML = `<h1>$${Number(data.predictedPrice).toLocaleString()}</h1>`;
+            predictionModal.hidden = false;
+            predictionModal.setAttribute("aria-hidden", "false");
+          } catch (error) {
+            predictionModal.hidden = true;
+            predictionModal.setAttribute("aria-hidden", "true");
+            errorMessage.innerText = error.message;
+          }
+        });
+    </script>
+  </body>
+</html>

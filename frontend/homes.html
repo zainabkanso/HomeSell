@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Homes | HomeSell</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <div id="navPlaceholder"></div>
+
+    <main class="container py-5">
+      <div id="messageBox"></div>
+      <div class="row mb-4 align-items-center">
+        <div class="col-md-6">
+          <h2 class="h3 mb-0">Explore homes</h2>
+        </div>
+        <div class="col-md-6 text-md-end mt-3 mt-md-0">
+          <input
+            id="searchInput"
+            type="search"
+            class="form-control"
+            placeholder="Search by title or location"
+          />
+        </div>
+      </div>
+      <div class="row" id="homesGrid"></div>
+    </main>
+
+    <div id="detailsModalContainer"></div>
+<div id="chatbotToggle">💬</div>
+
+<div id="chatbotBox">
+  <div class="chatbot-header">
+    <div>
+      <strong>Home Assistant</strong>
+      <small>Ask me to filter homes</small>
+    </div>
+    <button id="chatbotClose">×</button>
+  </div>
+
+  <div id="chatbotMessages" class="chatbot-messages">
+    <div class="bot-message">
+      Hi 👋 Try: <br />
+      <b>homes in Beirut under 100000</b>
+    </div>
+  </div>
+
+  <div class="chatbot-options">
+    <span class="chatbot-options-label">Quick filters:</span>
+    <button type="button" onclick="askBotPreset('homes in Beirut under 100000')">Set Beirut under 100k</button>
+    <button type="button" onclick="askBotPreset('3 bedrooms in sour')">Set 3 beds in Sour</button>
+    <button type="button" onclick="askBotPreset('homes near rawshe over 200000')">Set Rawshe over 200k</button>
+  </div>
+
+  <div class="chatbot-input">
+    <input
+      type="text"
+      id="botInput"
+      placeholder="Ask me..."
+    />
+    <button type="button" onclick="askBot()">Submit</button>
+    <button type="button" onclick="resetHomesFilter()">Reset</button>
+  </div>
+</div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/common-nav.js"></script>
+    <script src="js/app.js"></script>
+</html>

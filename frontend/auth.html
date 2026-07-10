@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login / Register | HomeSell</title>
+    <link rel="stylesheet" href="css/styles.css" />
+
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        min-height: 100vh;
+        margin: 0;
+        background: #f7f2f7;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: Arial, sans-serif;
+      }
+
+      .back-home {
+        position: fixed;
+        top: 25px;
+        left: 25px;
+        color: #00b98e;
+        font-weight: bold;
+        text-decoration: none;
+        z-index: 99;
+      }
+
+      .auth-wrapper {
+        position: relative;
+        width: 760px;
+        max-width: 95%;
+        min-height: 420px;
+        background: #fff;
+        border-radius: 22px;
+        overflow: hidden;
+        box-shadow: 0 18px 45px rgba(0, 0, 0, 0.15);
+      }
+
+      .form-box {
+        position: absolute;
+        top: 0;
+        width: 50%;
+        height: 100%;
+        padding: 50px 45px;
+        background: white;
+        transition: 0.7s ease-in-out;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+
+      .login-box {
+        right: 0;
+        opacity: 1;
+        z-index: 2;
+      }
+
+      .register-box {
+        left: 0;
+        opacity: 0;
+        z-index: 1;
+      }
+
+      .auth-wrapper.active .login-box {
+        opacity: 0;
+        z-index: 1;
+      }
+
+      .auth-wrapper.active .register-box {
+        opacity: 1;
+        z-index: 3;
+      }
+
+      .form-box h2 {
+        color: #00b98e;
+        margin-bottom: 22px;
+        font-weight: bold;
+      }
+
+      .form-box input {
+        width: 100%;
+        height: 42px;
+        padding: 10px 13px;
+        margin-bottom: 13px;
+        border: 1px solid #ddd;
+        border-radius: 7px;
+        outline: none;
+        font-size: 14px;
+        background: white;
+      }
+
+      .form-box input:focus {
+        border-color: #00b98e;
+      }
+
+      .small-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 12px;
+        margin-bottom: 20px;
+        color: #777;
+      }
+
+      .small-row label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .small-row input {
+        width: auto;
+        height: auto;
+        margin: 0;
+      }
+
+      .small-row a {
+        color: #777;
+        text-decoration: none;
+      }
+
+      .auth-btn {
+        background: #00b98e;
+        color: white;
+        border: none;
+        padding: 11px 35px;
+        border-radius: 7px;
+        font-weight: bold;
+        cursor: pointer;
+        align-self: center;
+      }
+
+      .auth-btn:hover {
+        background: #009e7d;
+      }
+
+      .panel {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 50%;
+        height: 100%;
+        background: #00b98e;
+        color: white;
+        z-index: 10;
+        transition: 0.7s ease-in-out;
+        border-radius: 0 55px 55px 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 40px;
+      }
+
+      .auth-wrapper.active .panel {
+        transform: translateX(100%);
+        border-radius: 55px 0 0 55px;
+      }
+
+      .panel h2 {
+        color: white;
+        margin-bottom: 12px;
+        font-weight: bold;
+      }
+
+      .panel p {
+        font-size: 14px;
+        margin-bottom: 24px;
+      }
+
+      .panel button {
+        background: transparent;
+        border: 1px solid white;
+        color: white;
+        padding: 10px 30px;
+        border-radius: 7px;
+        font-size: 12px;
+        font-weight: bold;
+        cursor: pointer;
+      }
+
+      #messageBox,
+      #registerMessageBox {
+        margin-bottom: 10px;
+        font-size: 13px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <a href="index.html" class="back-home">← Home</a>
+
+    <div class="auth-wrapper" id="authWrapper">
+      <div class="panel">
+        <div>
+          <h2 id="panelTitle">Welcome</h2>
+          <p id="panelText">Join our platform and explore homes easily.</p>
+          <button id="switchBtn" type="button">REGISTER</button>
+        </div>
+      </div>
+
+      <div class="form-box login-box">
+        <h2>Sign In</h2>
+        <div id="messageBox"></div>
+
+        <form id="loginForm">
+          <input type="email" name="email" placeholder="Email" required />
+          <input
+            type="password"
+            name="password"
+            placeholder="Password"
+            required
+          />
+
+          <div class="small-row">
+            <label><input type="checkbox" /> Remember me</label>
+            <a href="#">Forgot password?</a>
+          </div>
+
+          <button class="auth-btn" type="submit">LOGIN</button>
+        </form>
+      </div>
+
+      <div class="form-box register-box">
+        <h2>Create Account</h2>
+        <div id="registerMessageBox"></div>
+
+        <form id="registerForm">
+          <input type="text" name="name" placeholder="Name" required />
+          <input type="email" name="email" placeholder="Email" required />
+          <input type="tel" name="phone" placeholder="Phone Number" required />
+          <input
+            type="password"
+            name="password"
+            placeholder="Password"
+            required
+          />
+          <input
+            type="password"
+            name="confirmPassword"
+            placeholder="Confirm Password"
+            required
+          />
+          <button class="auth-btn" type="submit">REGISTER</button>
+        </form>
+      </div>
+    </div>
+
+    <script src="js/app.js"></script>
+
+    <script>
+      const authWrapper = document.getElementById("authWrapper");
+      const switchBtn = document.getElementById("switchBtn");
+      const panelTitle = document.getElementById("panelTitle");
+      const panelText = document.getElementById("panelText");
+
+      switchBtn.addEventListener("click", () => {
+        authWrapper.classList.toggle("active");
+
+        if (authWrapper.classList.contains("active")) {
+          panelTitle.innerText = "Welcome Back";
+          panelText.innerText = "Already have an account? Sign in again.";
+          switchBtn.innerText = "LOGIN";
+        } else {
+          panelTitle.innerText = "Welcome";
+          panelText.innerText = "Join our platform and explore homes easily.";
+          switchBtn.innerText = "REGISTER";
+        }
+      });
+    </script>
+  </body>
+</html>

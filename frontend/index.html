@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Home Selling Platform</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <div id="navPlaceholder"></div>
+
+    <section class="hero">
+      <div class="container">
+        <div class="row align-items-center">
+          <div class="col-lg-6">
+            <h1 class="hero-title display-5 fw-bold">
+              Find your dream home with confidence.
+            </h1>
+            <p class="lead text-muted">
+              Browse modern listings, save favorites, and manage properties from
+              one clean platform.
+            </p>
+            <a href="homes.html" class="btn btn-brand btn-lg">Browse Homes</a>
+            <a href="predict.html" class="btn btn-brand btn-lg"
+              >Predict your home price</a
+            >
+          </div>
+          <div class="col-lg-6 text-center mt-4 mt-lg-0">
+            <img
+              src="https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=900&q=80"
+              class="img-fluid rounded-4 shadow-lg"
+              alt="Dream home"
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="py-5">
+      <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <div>
+            <h2 class="h3">Featured homes</h2>
+            <p class="text-muted mb-0">
+              Quick access to the latest properties.
+            </p>
+          </div>
+          <a href="homes.html" class="text-decoration-none">View all homes</a>
+        </div>
+
+        <div class="row" id="featuredHomes"></div>
+      </div>
+    </section>
+
+    <section class="bg-light py-5">
+      <div class="container">
+        <div class="row gy-4">
+          <div class="col-md-4">
+            <div class="featured-listing p-4">
+              <h5>Beautiful design</h5>
+              <p class="text-muted">
+                A bright, modern interface for buyers and admins.
+              </p>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="featured-listing p-4">
+              <h5>Easy management</h5>
+              <p class="text-muted">
+                Add listings, edit details, and remove homes on the admin
+                dashboard.
+              </p>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="featured-listing p-4">
+              <h5>Save favorites</h5>
+              <p class="text-muted">
+                Sign in to save the properties you love and revisit them later.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+   
+
+    <section class="py-5">
+      <div class="container">
+        <div class="row mb-4">
+          <div class="col-12">
+            <h2 class="h3 fw-bold">What users say</h2>
+            <p class="text-muted mb-0">Approved feedback from our community.</p>
+          </div>
+        </div>
+        <div id="shownFeedbacks"></div>
+      </div>
+    </section>
+
+    <div id="detailsModalContainer"></div>
+ <section class="py-5 bg-light">
+      <div class="container">
+        <div class="row justify-content-center">
+          <div class="col-lg-8 text-center">
+            <h2 class="h3 fw-bold mb-3">Share your experience</h2>
+            <p class="text-muted mb-4">
+              We value your feedback and use it to improve HomeSell.
+            </p>
+            <a href="feedback.html" class="btn btn-brand">Add Feedback</a>
+          </div>
+        </div>
+      </div>
+    </section>
+    <footer class="footer bg-dark text-light pt-5 pb-3 mt-5">
+      <div class="container">
+        <div class="row">
+          <!-- Brand -->
+          <div class="col-md-4 mb-4">
+            <h4 class="fw-bold text-white">HomeSphere</h4>
+            <p class="text-light-emphasis">
+              Discover modern homes, apartments, and luxury properties with a
+              seamless real estate experience.
+            </p>
+          </div>
+
+          <!-- Quick Links -->
+          <div class="col-md-2 mb-4">
+            <h6 class="fw-bold text-uppercase mb-3">Links</h6>
+            <ul class="list-unstyled">
+              <li><a href="index.html" class="footer-link">Home</a></li>
+              <li><a href="homes.html" class="footer-link">Properties</a></li>
+              <li>
+                <a href="favorites.html" class="footer-link">Favorites</a>
+              </li>
+              <li><a href="auth.html" class="footer-link">Login</a></li>
+            </ul>
+          </div>
+
+          <!-- Services -->
+          <div class="col-md-3 mb-4">
+            <h6 class="fw-bold text-uppercase mb-3">Services</h6>
+            <ul class="list-unstyled">
+              <li><span class="footer-text">Property Listings</span></li>
+              <li><span class="footer-text">Home Management</span></li>
+              <li><span class="footer-text">Favorites System</span></li>
+              <li><span class="footer-text">Secure Authentication</span></li>
+            </ul>
+          </div>
+
+          <!-- Contact -->
+          <div class="col-md-3 mb-4">
+            <h6 class="fw-bold text-uppercase mb-3">Contact</h6>
+            <p class="mb-1">📍 Beirut, Lebanon</p>
+            <p class="mb-1">📧 support@homesphere.com</p>
+            <p>📞 +961 70 000 000</p>
+          </div>
+        </div>
+
+        <hr class="border-secondary" />
+
+        <div class="text-center text-secondary small">
+          © 2026 HomeSphere. All rights reserved.
+        </div>
+      </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/common-nav.js"></script>
+    <script src="js/app.js"></script>
+  </body>
+</html>
