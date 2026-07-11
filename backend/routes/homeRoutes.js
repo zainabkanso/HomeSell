@@ -1,7 +1,9 @@
 const express = require("express");
 const router = express.Router();
+
 const authMiddleware = require("../middleware/authMiddleware");
 const upload = require("../middleware/uploadMiddleware");
+
 const {
   getHomes,
   getHomeById,
@@ -13,8 +15,15 @@ const {
 } = require("../controllers/homeController");
 
 router.get("/", getHomes);
-router.get("/my", authMiddleware, getMyHomes);
+
+router.get(
+  "/my",
+  authMiddleware,
+  getMyHomes,
+);
+
 router.get("/:id", getHomeById);
+
 router.post(
   "/",
   authMiddleware,
@@ -34,7 +43,17 @@ router.put(
   ]),
   updateHome,
 );
-router.post("/:id/publish", authMiddleware, publishDraft);
-router.delete("/:id", authMiddleware, deleteHome);
+
+router.post(
+  "/:id/publish",
+  authMiddleware,
+  publishDraft,
+);
+
+router.delete(
+  "/:id",
+  authMiddleware,
+  deleteHome,
+);
 
 module.exports = router;

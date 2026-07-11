@@ -3,26 +3,52 @@ const Home = require("../models/Home");
 const isLebanesePhone = (phone) => {
   if (!phone) return false;
 
-  const cleaned = phone.replace(/[\s\-()]/g, "");
+  const cleaned = String(phone).replace(/[\s\-()]/g, "");
 
-  return /^(?:\+961|00961|961)?(?:3\d{6}|(?:70|71|76|78|79|81)\d{6})$|^0(?:3\d{6}|(?:70|71|76|78|79|81)\d{6})$/.test(cleaned);
+  return /^(?:\+961|00961|961)?(?:3\d{6}|(?:70|71|76|78|79|81)\d{6})$|^0(?:3\d{6}|(?:70|71|76|78|79|81)\d{6})$/.test(
+    cleaned,
+  );
 };
+
+const normalizeUploadedFiles = (files = []) => {
+  return files
+    .map((file) => file.path || file.secure_url)
+    .filter(Boolean);
+};
+
+const userOwnsHome = (home, userId) => {
+  if (!home?.owner || !userId) return false;
+
+  return home.owner.toString() === userId.toString();
+};
+
+/* =========================================================
+   GET ALL PUBLISHED HOMES
+========================================================= */
 
 exports.getHomes = async (req, res) => {
   try {
-    // Fetch published homes (treat missing status as published for backward compatibility)
     const homes = await Home.find({
-      $or: [{ status: "published" }, { status: { $exists: false } }],
+      $or: [
+        { status: "published" },
+        { status: { $exists: false } },
+      ],
     }).sort({ createdAt: -1 });
 
-    res.json(homes);
+    return res.json(homes);
   } catch (error) {
-    res.status(500).json({
+    console.error("GET HOMES ERROR:", error);
+
+    return res.status(500).json({
       message: "Failed to load homes",
       error: error.message,
     });
   }
 };
+
+/* =========================================================
+   GET ONE HOME
+========================================================= */
 
 exports.getHomeById = async (req, res) => {
   try {
@@ -34,14 +60,20 @@ exports.getHomeById = async (req, res) => {
       });
     }
 
-    res.json(home);
+    return res.json(home);
   } catch (error) {
-    res.status(500).json({
+    console.error("GET HOME ERROR:", error);
+
+    return res.status(500).json({
       message: "Failed to load home",
       error: error.message,
     });
   }
 };
+
+/* =========================================================
+   CREATE HOME
+========================================================= */
 
 exports.createHome = async (req, res) => {
   try {
@@ -57,6 +89,13 @@ exports.createHome = async (req, res) => {
       status = "published",
     } = req.body;
 
+    if (!title || !description || !price || !location) {
+      return res.status(400).json({
+        message:
+          "Title, description, price, and location are required.",
+      });
+    }
+
     if (!ownerPhone) {
       return res.status(400).json({
         message: "Owner phone number is required",
@@ -65,55 +104,73 @@ exports.createHome = async (req, res) => {
 
     if (!isLebanesePhone(ownerPhone)) {
       return res.status(400).json({
-        message: "Owner phone must be a valid Lebanese phone number.",
+        message:
+          "Owner phone must be a valid Lebanese phone number.",
       });
     }
 
-    if (status !== "draft" && status !== "published") {
+    if (!["draft", "published"].includes(status)) {
       return res.status(400).json({
         message: "Status must be 'draft' or 'published'",
       });
     }
 
-    const images = req.files?.images
-      ? req.files.images.map((file) => `/uploads/${file.filename}`)
-      : [];
+    const images = normalizeUploadedFiles(
+      req.files?.images || [],
+    );
 
-    const videos = req.files?.videos
-      ? req.files.videos.map((file) => `/uploads/${file.filename}`)
-      : [];
+    const videos = normalizeUploadedFiles(
+      req.files?.videos || [],
+    );
 
-    const mainImageIndex = Number(req.body.mainImageIndex || 0);
-    const mainImage = images[mainImageIndex] || images[0] || "";
+    const requestedMainImageIndex = Number(
+      req.body.mainImageIndex || 0,
+    );
+
+    const validMainImageIndex =
+      Number.isInteger(requestedMainImageIndex) &&
+      requestedMainImageIndex >= 0 &&
+      requestedMainImageIndex < images.length
+        ? requestedMainImageIndex
+        : 0;
+
+    const mainImage =
+      images[validMainImageIndex] || images[0] || "";
 
     const home = new Home({
-      title,
-      description,
-      price,
-      location,
-      bedrooms,
-      bathrooms,
-      area,
+      title: title.trim(),
+      description: description.trim(),
+      price: Number(price),
+      location: location.trim(),
+      bedrooms: Number(bedrooms || 0),
+      bathrooms: Number(bathrooms || 0),
+      area: Number(area || 0),
+
       images,
       mainImage,
       videos,
-      ownerPhone,
+
+      ownerPhone: ownerPhone.trim(),
       owner: req.userId,
       status,
     });
 
     await home.save();
 
-    res.status(201).json(home);
+    return res.status(201).json(home);
   } catch (error) {
-    console.log("CREATE HOME ERROR:", error);
+    console.error("CREATE HOME ERROR:", error);
 
-    res.status(500).json({
+    return res.status(500).json({
       message: "Failed to create home",
       error: error.message,
     });
   }
 };
+
+/* =========================================================
+   UPDATE HOME
+========================================================= */
 
 exports.updateHome = async (req, res) => {
   try {
@@ -130,6 +187,7 @@ exports.updateHome = async (req, res) => {
       deleteImages,
       deleteVideos,
       selectedMainImage,
+      status,
     } = req.body;
 
     const home = await Home.findById(req.params.id);
@@ -140,7 +198,11 @@ exports.updateHome = async (req, res) => {
       });
     }
 
-    if (home.owner.toString() !== req.userId && !req.isAdmin) {
+    const isOwner = userOwnsHome(home, req.userId);
+    const isAdmin =
+      req.isAdmin === true || req.isAdmin === "true";
+
+    if (!isOwner && !isAdmin) {
       return res.status(403).json({
         message: "You are not allowed to update this home",
       });
@@ -148,109 +210,192 @@ exports.updateHome = async (req, res) => {
 
     if (ownerPhone && !isLebanesePhone(ownerPhone)) {
       return res.status(400).json({
-        message: "Owner phone must be a valid Lebanese phone number.",
+        message:
+          "Owner phone must be a valid Lebanese phone number.",
       });
     }
 
-    // Delete selected images
+    if (
+      status &&
+      !["draft", "published"].includes(status)
+    ) {
+      return res.status(400).json({
+        message: "Status must be 'draft' or 'published'",
+      });
+    }
+
+    /*
+      Remove selected image URLs from MongoDB.
+
+      This removes them from the Home document.
+      It does not yet permanently delete them from Cloudinary.
+    */
+
     if (deleteImages) {
       const imagesToDelete = Array.isArray(deleteImages)
         ? deleteImages
         : [deleteImages];
 
       home.images = (home.images || []).filter(
-        (img) => !imagesToDelete.includes(img),
+        (imageUrl) => !imagesToDelete.includes(imageUrl),
       );
 
-      if (!home.images.includes(home.mainImage)) {
+      if (
+        home.mainImage &&
+        !home.images.includes(home.mainImage)
+      ) {
         home.mainImage = home.images[0] || "";
       }
     }
 
-    // Delete selected videos
+    /*
+      Remove selected video URLs from MongoDB.
+    */
+
     if (deleteVideos) {
       const videosToDelete = Array.isArray(deleteVideos)
         ? deleteVideos
         : [deleteVideos];
 
       home.videos = (home.videos || []).filter(
-        (video) => !videosToDelete.includes(video),
+        (videoUrl) => !videosToDelete.includes(videoUrl),
       );
     }
 
-    // Add new images
-    if (req.files?.images && req.files.images.length > 0) {
-      const newImages = req.files.images.map(
-        (file) => `/uploads/${file.filename}`,
-      );
+    /*
+      Add newly uploaded Cloudinary image URLs.
+    */
 
-      home.images = [...(home.images || []), ...newImages];
+    const newImages = normalizeUploadedFiles(
+      req.files?.images || [],
+    );
 
-      const index = Number(mainImageIndex || 0);
+    if (newImages.length > 0) {
+      home.images = [
+        ...(home.images || []),
+        ...newImages,
+      ];
 
-      // Give priority to newly uploaded main image
-      if (newImages[index]) {
-        home.mainImage = newImages[index];
-      } else if (!home.mainImage) {
-        home.mainImage = newImages[0];
-      }
+      const requestedIndex = Number(mainImageIndex || 0);
+
+      const validIndex =
+        Number.isInteger(requestedIndex) &&
+        requestedIndex >= 0 &&
+        requestedIndex < newImages.length
+          ? requestedIndex
+          : 0;
+
+      home.mainImage =
+        newImages[validIndex] ||
+        home.mainImage ||
+        newImages[0];
     }
 
-    // Choose existing image as main image ONLY if no new images were uploaded
+    /*
+      Use an existing image as main image only when
+      the user did not upload new images.
+    */
+
     if (
       selectedMainImage &&
       (home.images || []).includes(selectedMainImage) &&
-      !(req.files?.images && req.files.images.length > 0)
+      newImages.length === 0
     ) {
       home.mainImage = selectedMainImage;
     }
-    // If still no main image
+
     if (!home.mainImage && home.images?.length > 0) {
       home.mainImage = home.images[0];
     }
 
-    // Add new videos
-    if (req.files?.videos && req.files.videos.length > 0) {
-      const newVideos = req.files.videos.map(
-        (file) => `/uploads/${file.filename}`,
-      );
+    /*
+      Add newly uploaded Cloudinary video URLs.
+    */
 
-      home.videos = [...(home.videos || []), ...newVideos];
+    const newVideos = normalizeUploadedFiles(
+      req.files?.videos || [],
+    );
+
+    if (newVideos.length > 0) {
+      home.videos = [
+        ...(home.videos || []),
+        ...newVideos,
+      ];
     }
 
-    home.title = title || home.title;
-    home.description = description || home.description;
-    home.price = price || home.price;
-    home.location = location || home.location;
-    home.bedrooms = bedrooms || home.bedrooms;
-    home.bathrooms = bathrooms || home.bathrooms;
-    home.area = area || home.area;
-    home.ownerPhone = ownerPhone || home.ownerPhone;
+    /*
+      Update normal fields.
 
-    // Update status if provided in body
-    if (req.body.status) {
-      if (req.body.status !== "draft" && req.body.status !== "published") {
-        return res.status(400).json({
-          message: "Status must be 'draft' or 'published'",
-        });
-      }
-      home.status = req.body.status;
+      We check undefined and empty strings so that numeric
+      values such as 0 are handled correctly.
+    */
+
+    if (title !== undefined && title !== "") {
+      home.title = title.trim();
+    }
+
+    if (
+      description !== undefined &&
+      description !== ""
+    ) {
+      home.description = description.trim();
+    }
+
+    if (price !== undefined && price !== "") {
+      home.price = Number(price);
+    }
+
+    if (location !== undefined && location !== "") {
+      home.location = location.trim();
+    }
+
+    if (
+      bedrooms !== undefined &&
+      bedrooms !== ""
+    ) {
+      home.bedrooms = Number(bedrooms);
+    }
+
+    if (
+      bathrooms !== undefined &&
+      bathrooms !== ""
+    ) {
+      home.bathrooms = Number(bathrooms);
+    }
+
+    if (area !== undefined && area !== "") {
+      home.area = Number(area);
+    }
+
+    if (
+      ownerPhone !== undefined &&
+      ownerPhone !== ""
+    ) {
+      home.ownerPhone = ownerPhone.trim();
+    }
+
+    if (status) {
+      home.status = status;
     }
 
     home.updatedAt = new Date();
 
     await home.save();
 
-    res.json(home);
+    return res.json(home);
   } catch (error) {
-    console.log("CREATE HOME ERROR FULL:", error);
-  console.log("CREATE HOME ERROR MESSAGE:", error.message);
-    res.status(500).json({
+    console.error("UPDATE HOME ERROR:", error);
+
+    return res.status(500).json({
       message: "Failed to update home",
       error: error.message,
     });
   }
 };
+
+/* =========================================================
+   DELETE HOME
+========================================================= */
 
 exports.deleteHome = async (req, res) => {
   try {
@@ -262,8 +407,9 @@ exports.deleteHome = async (req, res) => {
       });
     }
 
-    const isOwner = home.owner.toString() === req.userId.toString();
-    const isAdmin = req.isAdmin === true || req.isAdmin === "true";
+    const isOwner = userOwnsHome(home, req.userId);
+    const isAdmin =
+      req.isAdmin === true || req.isAdmin === "true";
 
     if (!isOwner && !isAdmin) {
       return res.status(403).json({
@@ -273,60 +419,45 @@ exports.deleteHome = async (req, res) => {
 
     await home.deleteOne();
 
-    res.json({
+    return res.json({
       message: "Home deleted successfully",
     });
   } catch (error) {
-    console.log("DELETE HOME ERROR:", error);
-  console.log("DELETE HOME ERROR MESSAGE:", error.message);
-    res.status(500).json({
+    console.error("DELETE HOME ERROR:", error);
+
+    return res.status(500).json({
       message: "Failed to delete home",
       error: error.message,
     });
   }
 };
-// exports.deleteHome = async (req, res) => {
-//   try {
-//     const home = await Home.findById(req.params.id);
 
-//     if (!home) {
-//       return res.status(404).json({
-//         message: "Home not found",
-//       });
-//     }
-
-//     if (home.owner.toString() !== req.userId && !req.isAdmin) {
-//       return res.status(403).json({
-//         message: "You are not allowed to delete this home",
-//       });
-//     }
-
-//     await home.deleteOne();
-
-//     res.json({
-//       message: "Home deleted successfully",
-//     });
-//   } catch (error) {
-//     res.status(500).json({
-//       message: "Failed to delete home",
-//       error: error.message,
-//     });
-//   }
-// };
+/* =========================================================
+   GET CURRENT USER HOMES
+========================================================= */
 
 exports.getMyHomes = async (req, res) => {
   try {
-    const homes = await Home.find({ owner: req.userId }).sort({
+    const homes = await Home.find({
+      owner: req.userId,
+    }).sort({
       createdAt: -1,
     });
-    res.json(homes);
+
+    return res.json(homes);
   } catch (error) {
-    res.status(500).json({
+    console.error("GET MY HOMES ERROR:", error);
+
+    return res.status(500).json({
       message: "Failed to load your homes",
       error: error.message,
     });
   }
 };
+
+/* =========================================================
+   PUBLISH DRAFT
+========================================================= */
 
 exports.publishDraft = async (req, res) => {
   try {
@@ -338,22 +469,30 @@ exports.publishDraft = async (req, res) => {
       });
     }
 
-    if (home.owner.toString() !== req.userId && !req.isAdmin) {
+    const isOwner = userOwnsHome(home, req.userId);
+    const isAdmin =
+      req.isAdmin === true || req.isAdmin === "true";
+
+    if (!isOwner && !isAdmin) {
       return res.status(403).json({
-        message: "You are not allowed to publish this home",
+        message:
+          "You are not allowed to publish this home",
       });
     }
 
     home.status = "published";
     home.updatedAt = new Date();
+
     await home.save();
 
-    res.json({
+    return res.json({
       message: "Home published successfully",
       home,
     });
   } catch (error) {
-    res.status(500).json({
+    console.error("PUBLISH HOME ERROR:", error);
+
+    return res.status(500).json({
       message: "Failed to publish home",
       error: error.message,
     });

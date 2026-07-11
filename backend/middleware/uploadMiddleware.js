@@ -1,25 +1,8 @@
 const multer = require("multer");
-const path = require("path");
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+const cloudinary = require("../config/cloudinary");
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, path.join(__dirname, "../uploads"));
-  },
-
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    const extension = path.extname(file.originalname);
-
-    const prefix = file.mimetype.startsWith("video/")
-      ? "video"
-      : "image";
-
-    cb(null, `${prefix}-${uniqueSuffix}${extension}`);
-  },
-});
-
-const fileFilter = (req, file, cb) => {
- const allowedTypes = [
+const allowedTypes = [
   "image/jpeg",
   "image/jpg",
   "image/png",
@@ -28,6 +11,7 @@ const fileFilter = (req, file, cb) => {
   "video/mp4",
   "video/webm",
   "video/ogg",
+  "video/quicktime",
 
   "audio/mpeg",
   "audio/mp3",
@@ -36,23 +20,49 @@ const fileFilter = (req, file, cb) => {
   "audio/ogg",
 ];
 
+const fileFilter = (req, file, cb) => {
   if (allowedTypes.includes(file.mimetype)) {
-    cb(null, true);
-  } else {
-    cb(
-      new Error(
-        "Only JPG, JPEG, PNG, WEBP images and MP4, WEBM, OGG videos are allowed"
-      )
-    );
+    return cb(null, true);
   }
+
+  return cb(
+    new Error(
+      "Only JPG, JPEG, PNG, WEBP images, MP4, WEBM, OGG, MOV videos, and supported audio files are allowed.",
+    ),
+    false,
+  );
 };
+
+const storage = new CloudinaryStorage({
+  cloudinary,
+
+  params: async (req, file) => {
+    let folder = "homesell/files";
+
+    if (file.mimetype.startsWith("image/")) {
+      folder = "homesell/images";
+    } else if (file.mimetype.startsWith("video/")) {
+      folder = "homesell/videos";
+    } else if (file.mimetype.startsWith("audio/")) {
+      folder = "homesell/audio";
+    }
+
+    return {
+      folder,
+      resource_type: "auto",
+      public_id: `${Date.now()}-${Math.round(Math.random() * 1e9)}`,
+    };
+  },
+});
 
 const upload = multer({
   storage,
+  fileFilter,
+
   limits: {
     fileSize: 50 * 1024 * 1024,
+    files: 15,
   },
-  fileFilter,
 });
 
 module.exports = upload;

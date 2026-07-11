@@ -28,11 +28,19 @@ const io = new Server(server, {
   },
 });
 
+const fs = require("fs");
+
+const uploadsDir = path.join(__dirname, "uploads");
+
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+// app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/homes", homeRoutes);
@@ -59,9 +67,6 @@ io.on("connection", (socket) => {
     io.to(messageData.chatId).emit("receiveMessage", messageData);
   });
 
-  socket.on("deleteMessage", (data) => {
-    io.to(data.chatId).emit("messageDeleted", data.messageId);
-  });
 
   socket.on("editMessage", (data) => {
     io.to(data.chatId).emit("messageEdited", data.message);
