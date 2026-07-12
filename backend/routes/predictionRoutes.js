@@ -35,8 +35,33 @@ router.post("/predict-price", async (req, res) => {
         headers: {
           "Content-Type": "application/json",
         },
+        validateStatus: () => true,
       },
     );
+
+    const contentType = String(
+      response.headers["content-type"] || "",
+    );
+
+    if (!contentType.includes("application/json")) {
+      console.error(
+        "AI PREDICTION ERROR: Non-JSON response received from AI service.",
+      );
+
+      return res.status(502).json({
+        message:
+          "AI service returned an invalid response. Check AI_SERVICE_URL and that the AI Render service is running.",
+      });
+    }
+
+    if (response.status >= 400) {
+      return res.status(502).json({
+        message:
+          response.data?.message ||
+          "Unable to obtain the price prediction",
+        error: response.data?.error,
+      });
+    }
 
     return res.json({
       predictedPrice: response.data.price,

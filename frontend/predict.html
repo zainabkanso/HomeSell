@@ -387,6 +387,14 @@
               }),
             });
 
+            const contentType = response.headers.get("content-type") || "";
+
+            if (!contentType.includes("application/json")) {
+              throw new Error(
+                "Server returned an invalid response. Check that AI_SERVICE_URL is set on the backend Render service.",
+              );
+            }
+
             const data = await response.json();
 
             if (!response.ok) {

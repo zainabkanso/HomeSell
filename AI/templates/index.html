@@ -196,25 +196,33 @@
       }
 
       try {
-        const response = await fetch("/api/predict-price", {
+        const response = await fetch("/predict", {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
-            location: document.getElementById("location").value,
-            type: document.getElementById("type").value,
-            bedrooms,
-            bathrooms,
-            salons,
-            kitchens,
-            area,
-            floor,
-            yearBuilt,
-            condition: document.getElementById("condition").value,
-            proximityToAmenities
+            Location: document.getElementById("location").value,
+            Type: document.getElementById("type").value,
+            Bedrooms: bedrooms,
+            Bathrooms: bathrooms,
+            Salons: salons,
+            Kitchens: kitchens,
+            "Area (m²)": area,
+            Floor: floor,
+            "Year Built": yearBuilt,
+            Condition: document.getElementById("condition").value,
+            "Proximity to Amenities (m)": proximityToAmenities
           })
         });
+
+        const contentType = response.headers.get("content-type") || "";
+
+        if (!contentType.includes("application/json")) {
+          throw new Error(
+            "The AI service returned an invalid response. Check that the service is running on Render."
+          );
+        }
 
         const data = await response.json();
 
@@ -223,7 +231,7 @@
         }
 
         document.getElementById("result").innerText =
-          `📌 AI Suggested Price: $${data.predictedPrice}`;
+          `📌 AI Suggested Price: $${Number(data.price).toLocaleString()}`;
 
         document.getElementById("note").innerText =
           "This is only an estimated price. The seller can choose any price.";
