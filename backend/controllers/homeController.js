@@ -1,4 +1,5 @@
 const Home = require("../models/Home");
+const { deleteFileByUrl } = require("../utils/firebaseStorage");
 
 const isLebanesePhone = (phone) => {
   if (!phone) return false;
@@ -11,9 +12,7 @@ const isLebanesePhone = (phone) => {
 };
 
 const normalizeUploadedFiles = (files = []) => {
-  return files
-    .map((file) => file.path || file.secure_url)
-    .filter(Boolean);
+  return files.map((file) => file.path).filter(Boolean);
 };
 
 const userOwnsHome = (home, userId) => {
@@ -224,17 +223,14 @@ exports.updateHome = async (req, res) => {
       });
     }
 
-    /*
-      Remove selected image URLs from MongoDB.
-
-      This removes them from the Home document.
-      It does not yet permanently delete them from Cloudinary.
-    */
-
     if (deleteImages) {
       const imagesToDelete = Array.isArray(deleteImages)
         ? deleteImages
         : [deleteImages];
+
+      await Promise.all(
+        imagesToDelete.map((imageUrl) => deleteFileByUrl(imageUrl)),
+      );
 
       home.images = (home.images || []).filter(
         (imageUrl) => !imagesToDelete.includes(imageUrl),
@@ -257,14 +253,14 @@ exports.updateHome = async (req, res) => {
         ? deleteVideos
         : [deleteVideos];
 
+      await Promise.all(
+        videosToDelete.map((videoUrl) => deleteFileByUrl(videoUrl)),
+      );
+
       home.videos = (home.videos || []).filter(
         (videoUrl) => !videosToDelete.includes(videoUrl),
       );
     }
-
-    /*
-      Add newly uploaded Cloudinary image URLs.
-    */
 
     const newImages = normalizeUploadedFiles(
       req.files?.images || [],
@@ -307,10 +303,6 @@ exports.updateHome = async (req, res) => {
     if (!home.mainImage && home.images?.length > 0) {
       home.mainImage = home.images[0];
     }
-
-    /*
-      Add newly uploaded Cloudinary video URLs.
-    */
 
     const newVideos = normalizeUploadedFiles(
       req.files?.videos || [],

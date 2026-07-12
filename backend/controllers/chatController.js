@@ -104,7 +104,7 @@ exports.sendMessage = async (req, res) => {
     let fileUrl = "";
 
     if (req.file) {
-      fileUrl = `/uploads/${req.file.filename}`;
+      fileUrl = req.file.path || "";
     }
 
     if (!text && !fileUrl && type !== "location") {

@@ -1,6 +1,5 @@
 const multer = require("multer");
-const { CloudinaryStorage } = require("multer-storage-cloudinary");
-const cloudinary = require("../config/cloudinary");
+const { uploadBuffer } = require("../utils/firebaseStorage");
 
 const allowedTypes = [
   "image/jpeg",
@@ -33,30 +32,42 @@ const fileFilter = (req, file, cb) => {
   );
 };
 
-const storage = new CloudinaryStorage({
-  cloudinary,
+class FirebaseStorageEngine {
+  _handleFile(req, file, cb) {
+    const chunks = [];
 
-  params: async (req, file) => {
-    let folder = "homesell/files";
+    file.stream.on("data", (chunk) => chunks.push(chunk));
+    file.stream.on("error", (err) => cb(err));
 
-    if (file.mimetype.startsWith("image/")) {
-      folder = "homesell/images";
-    } else if (file.mimetype.startsWith("video/")) {
-      folder = "homesell/videos";
-    } else if (file.mimetype.startsWith("audio/")) {
-      folder = "homesell/audio";
-    }
+    file.stream.on("end", async () => {
+      try {
+        const buffer = Buffer.concat(chunks);
+        const { url, path: storagePath } = await uploadBuffer(
+          buffer,
+          file.mimetype,
+          file.originalname,
+        );
 
-    return {
-      folder,
-      resource_type: "auto",
-      public_id: `${Date.now()}-${Math.round(Math.random() * 1e9)}`,
-    };
-  },
-});
+        cb(null, {
+          path: url,
+          storagePath,
+          size: buffer.length,
+          mimetype: file.mimetype,
+          originalname: file.originalname,
+        });
+      } catch (error) {
+        cb(error);
+      }
+    });
+  }
+
+  _removeFile(req, file, cb) {
+    cb(null);
+  }
+}
 
 const upload = multer({
-  storage,
+  storage: new FirebaseStorageEngine(),
   fileFilter,
 
   limits: {

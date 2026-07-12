@@ -1,51 +1,141 @@
-from flask import Flask, request, jsonify, render_template
+from pathlib import Path
 import pickle
+
 import pandas as pd
+from flask import Flask, jsonify, render_template, request
+from flask_cors import CORS
 
-app = Flask(__name__)
 
-# Load model and encoders
-model = pickle.load(open('random_forest_model.pkl', 'rb'))
-encoders = pickle.load(open('label_encoders.pkl', 'rb'))  # Ensure this is a dictionary
-columns = pickle.load(open('x_columns.pkl', 'rb'))
+BASE_DIR = Path(__file__).resolve().parent
 
-@app.route('/')
+app = Flask(
+    __name__,
+    template_folder=str(BASE_DIR / "templates"),
+)
+
+CORS(app)
+
+
+MODEL_PATH = BASE_DIR / "random_forest_model.pkl"
+ENCODERS_PATH = BASE_DIR / "label_encoders.pkl"
+COLUMNS_PATH = BASE_DIR / "x_columns.pkl"
+
+try:
+    with MODEL_PATH.open("rb") as model_file:
+        model = pickle.load(model_file)
+
+    with ENCODERS_PATH.open("rb") as encoders_file:
+        encoders = pickle.load(encoders_file)
+
+    with COLUMNS_PATH.open("rb") as columns_file:
+        columns = pickle.load(columns_file)
+
+    print("Model and preprocessing files loaded successfully.")
+
+except Exception as error:
+    print(f"Failed to load model files: {error}")
+    raise
+
+
+@app.route("/", methods=["GET"])
 def home():
-    return render_template('page.html')
+    return render_template("index.html")
 
-@app.route('/predict', methods=['POST'])
+
+@app.route("/health", methods=["GET"])
+def health():
+    return jsonify(
+        {
+            "status": "ok",
+            "service": "HomeSell house-price prediction API",
+        }
+    )
+
+
+@app.route("/predict", methods=["POST"])
 def predict():
-    data = request.get_json()  # Get JSON data from front-end
-    df = pd.DataFrame([data])  # Convert data into DataFrame
+    try:
+        data = request.get_json(silent=True)
 
-    # Convert numeric values
-    for col in df.columns:
-        try:
-            df[col] = pd.to_numeric(df[col])  # Convert columns to numeric if possible
-        except ValueError:
-            pass  # Ignore error for non-numeric columns
+        if not data or not isinstance(data, dict):
+            return (
+                jsonify(
+                    {
+                        "message": "A valid JSON object is required.",
+                    }
+                ),
+                400,
+            )
 
-    # Encode categorical variables (make sure the encoders exist in the dictionary)
-    for col in ['Location', 'Type', 'Condition']:
-        if col in df.columns:
-            le = encoders[col]  # Get the LabelEncoder for that column
-            val = df[col][0]
-            if val not in le.classes_:  # If unseen label, use the default category
-                val = le.classes_[0]
-            df[col] = le.transform([val])  # Apply the transformation
+        dataframe = pd.DataFrame([data])
 
-    # Ensure all columns are present (add missing columns with a default value of 0)
-    for col in columns:
-        if col not in df.columns:
-            df[col] = 0
+        for column_name in dataframe.columns:
+            dataframe[column_name] = pd.to_numeric(
+                dataframe[column_name],
+                errors="ignore",
+            )
 
-    # Align the DataFrame with the expected columns for the model
-    df = df[columns]
+        categorical_columns = [
+            "Location",
+            "Type",
+            "Condition",
+        ]
 
-    # Predict the price using the model
-    price = model.predict(df)[0]
+        for column_name in categorical_columns:
+            if column_name not in dataframe.columns:
+                continue
 
-    return jsonify({'price': round(price, 2)})  # Return predicted price as JSON
+            if column_name not in encoders:
+                return (
+                    jsonify(
+                        {
+                            "message": (
+                                f"No encoder was found for {column_name}."
+                            ),
+                        }
+                    ),
+                    500,
+                )
 
-if __name__ == '__main__':
-  app.run(debug=True, port=5001)
+            encoder = encoders[column_name]
+            value = str(dataframe.at[0, column_name])
+
+            if value not in encoder.classes_:
+                value = str(encoder.classes_[0])
+
+            dataframe[column_name] = encoder.transform([value])
+
+        for expected_column in columns:
+            if expected_column not in dataframe.columns:
+                dataframe[expected_column] = 0
+
+        dataframe = dataframe[columns]
+
+        predicted_price = float(model.predict(dataframe)[0])
+
+        return jsonify(
+            {
+                "price": round(predicted_price, 2),
+            }
+        )
+
+    except Exception as error:
+        print(f"PREDICTION ERROR: {error}")
+
+        return (
+            jsonify(
+                {
+                    "message": "Prediction failed.",
+                    "error": str(error),
+                }
+            ),
+            500,
+        )
+
+
+if __name__ == "__main__":
+    app.run(
+        host="0.0.0.0",
+        port=5001,
+        debug=False,
+    )

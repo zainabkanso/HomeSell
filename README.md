@@ -15,13 +15,18 @@ A beginner-friendly full-stack real estate app built with Node.js, Express, Mong
    ```bash
    npm install
    ```
-3. Create a `.env` file in `backend/` or use the provided one:
+3. Create a `.env` file in `backend/`:
    ```bash
    PORT=5000
    MONGO_URI=mongodb://127.0.0.1:27017/home-selling
    JWT_SECRET=your_jwt_secret
+   AI_SERVICE_URL=http://127.0.0.1:5001
+   FIREBASE_STORAGE_BUCKET=your-project-id.appspot.com
+   GOOGLE_APPLICATION_CREDENTIALS=./serviceAccountKey.json
    ```
-4. Start the backend server:
+   Or set `FIREBASE_SERVICE_ACCOUNT` to the full JSON service account string instead of `GOOGLE_APPLICATION_CREDENTIALS`.
+4. In Firebase Console, enable **Storage** and download a service account key from **Project settings > Service accounts**.
+5. Start the backend server:
    ```bash
    npm run dev
    ```
@@ -43,7 +48,7 @@ With the backend running, open:
 
 - User registration and login with JWT authentication
 - Password hashing with bcrypt
-- Home listing CRUD with image uploads via multer
+- Home listing CRUD with image uploads via Firebase Storage
 - Favorite homes for signed-in users
 - Responsive Bootstrap frontend
 - Clean MVC backend structure
@@ -51,5 +56,43 @@ With the backend running, open:
 ## Notes
 
 - The backend serves frontend files directly from `frontend/`.
-- Uploaded property images are stored in `backend/uploads/`.
+- Uploaded property images and chat files are stored in Firebase Storage.
 - Use the admin dashboard to manage listings.
+
+## AI Service (House Price Prediction)
+
+1. Open a terminal in `AI/`
+2. Install packages:
+   ```bash
+   pip install -r requirements.txt
+   ```
+3. Start the Flask service locally:
+   ```bash
+   python app.py
+   ```
+4. Verify health check:
+   ```text
+   http://127.0.0.1:5001/health
+   ```
+
+### Render deployment
+
+Create a **Web Service** with:
+
+- **Root Directory:** `AI`
+- **Build Command:** `pip install -r requirements.txt`
+- **Start Command:** `gunicorn app:app`
+
+Ensure these files are committed to GitHub:
+
+- `AI/app.py`
+- `AI/requirements.txt`
+- `AI/random_forest_model.pkl`
+- `AI/label_encoders.pkl`
+- `AI/x_columns.pkl`
+
+In the Node backend Render environment, set:
+
+```text
+AI_SERVICE_URL=https://YOUR-AI-SERVICE.onrender.com
+```
